@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suara DANA & BRIMO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#f0f3f8;--card:#fff;--blue:#0d8aee;--red:#dc2626;
+      --text:#111827;--text2:#64748b;--border:#f1f5f9;
+    }
+    body{
+      font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      background-image:radial-gradient(circle at 20% 20%,rgba(13,138,238,.04) 0%,transparent 50%),radial-gradient(circle at 80% 80%,rgba(220,38,38,.03) 0%,transparent 50%)
+    }
+    .main{width:340px;display:flex;flex-direction:column;gap:10px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px 22px;box-shadow:0 1px 2px rgba(0,0,0,.03),0 4px 16px rgba(0,0,0,.025);transition:box-shadow .25s}
+    .card:hover{box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 28px rgba(0,0,0,.055)}
+    .card-row{display:flex;align-items:center;gap:14px}
+    
+    .ico{width:44px;height:44px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+    .ico svg{width:20px;height:20px;fill:#fff}
+    .ico.blue{background:linear-gradient(135deg,#0d8aee,#0a6fc2);box-shadow:0 3px 10px rgba(13,138,238,.25)}
+    .ico.red{background:linear-gradient(135deg,#dc2626,#b91c1c);box-shadow:0 3px 10px rgba(220,38,38,.25)}
+    
+    .ico.clickable{cursor:pointer;outline:none;transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden}
+    .ico.clickable:hover{transform:scale(1.08)}
+    .ico.clickable:active{transform:scale(.92)}
+    .ico.blue.clickable:hover{box-shadow:0 5px 16px rgba(13,138,238,.35)}
+    .ico.blue.clickable:active{box-shadow:0 2px 6px rgba(13,138,238,.25)}
+    .ico.red.clickable:hover{box-shadow:0 5px 16px rgba(220,38,38,.35)}
+    .ico.red.clickable:active{box-shadow:0 2px 6px rgba(220,38,38,.25)}
+    
+    .ico.clickable .rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:rip .5s ease-out forwards;pointer-events:none}
+    @keyframes rip{to{transform:scale(3);opacity:0}}
+    .ico.clickable.playing{animation:pulse 1.2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{box-shadow:0 3px 10px rgba(0,0,0,.2)}50%{box-shadow:0 3px 20px rgba(255,255,255,.25),0 0 0 6px rgba(255,255,255,.1)}}
+    
+    .info{flex:1;min-width:0}
+    .info-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:1px}
+    .info-label.blue{color:var(--blue)}
+    .info-label.red{color:var(--red)}
+    .info-sub{font-size:11px;color:var(--text2);margin-top:1px}
+
+    @media(max-width:380px){.main{width:calc(100vw - 24px)}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+
+<audio id="sndDana" src="https://f.top4top.io/m_3866kd13c1.mp4" preload="auto"></audio>
+<audio id="sndBrimo" src="https://d.top4top.io/m_38946vda11.mp3" preload="auto"></audio>
+
+<div class="main">
+
+  <div class="card">
+    <div class="card-row">
+      <div class="ico blue clickable" id="playDana" role="button" tabindex="0" aria-label="Putar suara DANA">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.49 4.49 0 002.5-3.5zM14 3.23v2.06a7.007 7.007 0 010 13.42v2.06A9.014 9.014 0 0014 3.23z"/></svg>
+      </div>
+      <div class="info">
+        <div class="info-label blue">Suara DANA</div>
+        <div class="info-sub" id="subDana">Tekan untuk memutar</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-row">
+      <div class="ico red clickable" id="playBrimo" role="button" tabindex="0" aria-label="Putar suara BRIMO">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6zM10 19c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+      </div>
+      <div class="info">
+        <div class="info-label red">Suara BRIMO</div>
+        <div class="info-sub" id="subBrimo">Tekan untuk memutar</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+
+  /* === Ripple Effect === */
+  function addRip(btn,e){
+    var r=document.createElement('span');
+    r.className='rip';
+    var rect=btn.getBoundingClientRect();
+    var size=Math.max(rect.width,rect.height);
+    r.style.width=r.style.height=size+'px';
+    r.style.left=(e.clientX-rect.left-size/2)+'px';
+    r.style.top=(e.clientY-rect.top-size/2)+'px';
+    btn.appendChild(r);
+    r.addEventListener('animationend',function(){r.remove();});
+  }
+
+  /* === Audio Player Logic === */
+  function setupPlayer(aid,bid,sid){
+    var a=document.getElementById(aid),
+        b=document.getElementById(bid),
+        s=document.getElementById(sid);
+        
+    a.volume=1;
+    
+    function play(e){
+      if(e) addRip(b,e);
+      
+      /* Stop audio lain yang sedang berjalan */
+      document.querySelectorAll('audio').forEach(function(el){
+        if(el!==a){el.pause();el.currentTime=0;}
+      });
+      
+      /* Hapus animasi playing dari tombol lain */
+      document.querySelectorAll('.ico.clickable').forEach(function(el){
+        el.classList.remove('playing');
+      });
+      
+      a.currentTime=0;
+      var p=a.play();
+      
+      if(p&&p.then){
+        p.then(function(){
+          b.classList.add('playing');
+          s.textContent='Sedang memutar...';
+        }).catch(function(){
+          s.textContent='Tekan untuk memutar';
+        });
+      }
+    }
+    
+    a.addEventListener('ended',function(){
+      b.classList.remove('playing');
+      s.textContent='Tekan untuk memutar';
+    });
+    
+    b.addEventListener('click',play);
+    b.addEventListener('keydown',function(e){
+      if(e.key===' '||e.key==='Enter'){e.preventDefault();play(null);}
+    });
+  }
+
+  /* Inisialisasi Pemutar Suara */
+  setupPlayer('sndDana','playDana','subDana');
+  setupPlayer('sndBrimo','playBrimo','subBrimo');
+
+})();
+</script>
+</body>
+</html>
