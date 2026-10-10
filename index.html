@@ -21,7 +21,7 @@
     .card:hover{box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 28px rgba(0,0,0,.055)}
     .card-row{display:flex;align-items:center;gap:14px}
 
-    /* Spasi pemisah antara TEROMPET dan grup DANA/BRIMO */
+    /* Spasi pemisah antara TEROMPET dan grup MUSIK */
     .divider{display:flex;align-items:center;gap:12px;margin:8px 0}
     .divider::before,.divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#d7dfeb,transparent)}
 
@@ -81,8 +81,8 @@
 <body>
 
 <audio id="sndTrumpet" src="https://e.top4top.io/m_3933s4xm91.mp4" preload="auto"></audio>
-<audio id="sndDana" src="https://f.top4top.io/m_3866kd13c1.mp4" preload="auto"></audio>
-<audio id="sndBrimo" src="https://d.top4top.io/m_38946vda11.mp3" preload="auto"></audio>
+<audio id="sndMusik1" src="https://c.top4top.io/m_39351wz610.mp4" preload="auto" loop></audio>
+<audio id="sndMusik2" src="https://f.top4top.io/m_3935qjhke0.mp4" preload="auto" loop></audio>
 
 <div class="main">
 
@@ -108,28 +108,28 @@
   <!-- Spasi pemisah -->
   <div class="divider"></div>
 
-  <!-- ===== DANA ===== -->
+  <!-- ===== MUSIK 1 (LOOP TANPA HENTI) ===== -->
   <div class="card">
     <div class="card-row">
-      <div class="ico blue clickable" id="playDana" role="button" tabindex="0" aria-label="Putar suara DANA">
-        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.49 4.49 0 002.5-3.5zM14 3.23v2.06a7.007 7.007 0 010 13.42v2.06A9.014 9.014 0 0014 3.23z"/></svg>
+      <div class="ico blue clickable" id="playMusik1" role="button" tabindex="0" aria-label="Putar Musik 1 berulang tanpa henti">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
       </div>
       <div class="info">
-        <div class="info-label">Suara DANA</div>
-        <div class="info-sub" id="subDana">Tekan untuk memutar</div>
+        <div class="info-label">MUSIK 1</div>
+        <div class="info-sub" id="subMusik1">Tekan untuk memutar (berulang)</div>
       </div>
     </div>
   </div>
 
-  <!-- ===== BRIMO ===== -->
+  <!-- ===== MUSIK 2 (LOOP TANPA HENTI) — ikon sama dgn Musik 1, beda warna ===== -->
   <div class="card">
     <div class="card-row">
-      <div class="ico red clickable" id="playBrimo" role="button" tabindex="0" aria-label="Putar suara BRIMO">
-        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6zM10 19c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+      <div class="ico red clickable" id="playMusik2" role="button" tabindex="0" aria-label="Putar Musik 2 berulang tanpa henti">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
       </div>
       <div class="info">
-        <div class="info-label">Suara BRIMO</div>
-        <div class="info-sub" id="subBrimo">Tekan untuk memutar</div>
+        <div class="info-label">MUSIK 2</div>
+        <div class="info-sub" id="subMusik2">Tekan untuk memutar (berulang)</div>
       </div>
     </div>
   </div>
@@ -179,7 +179,14 @@
      Ubah angka ini kalau kurang kencang (1 = normal, 3 = kencang) */
   var BOOST=3;
 
+  /* ====== MEREDAKAN MUSIK SAAT TEROMPET BUNYI ======
+     0.25 = volume musik turun ke 25% saat terompet berbunyi.
+     Ubah angka ini kalau mau musiknya lebih terdengar (mis. 0.4). */
+  var DUCK=0.25;
+
   var actx=null, boostIn=null;
+  var players=[];
+  var trumpetPlaying=false;
 
   function ensureCtx(){
     if(actx) return;
@@ -197,26 +204,38 @@
   }
 
   /* File di-download jadi blob (supaya boleh diproses Web Audio),
-     lalu di-rute lewat GainNode agar volumenya bisa di atas 100% */
+     lalu di-rute lewat GainNode agar volumenya bisa di atas 100%.
+     Kalau sedang diputar, penukaran ditunda sampai berhenti
+     (penting untuk musik loop yang tidak pernah "ended"). */
   function tryBoost(a){
     if(!window.fetch) return;
+    var url=null, swapped=false;
+    var swap=function(){
+      if(swapped) return;
+      swapped=true;
+      var wasPlaying=!a.paused;
+      try{a.pause();}catch(e){}
+      try{a.src=url;a.load();a.dataset.boost='1';}catch(e){return;}
+      if(wasPlaying){var p=a.play(); if(p&&p.catch)p.catch(function(){});}
+    };
     fetch(a.currentSrc||a.src)
       .then(function(r){ if(!r.ok) throw 0; return r.blob(); })
       .then(function(blob){
-        var apply=function(){
-          try{
-            ensureCtx();
-            if(!actx) return;
-            a.src=URL.createObjectURL(blob);
-            a.load();
-            var s=actx.createMediaElementSource(a);
-            s.connect(boostIn);
-          }catch(e){}
-        };
-        if(a.paused) apply();
-        else a.addEventListener('ended',apply,{once:true});
+        url=URL.createObjectURL(blob);
+        if(a.paused) swap();
+        else{
+          a.addEventListener('pause',swap,{once:true});
+          a.addEventListener('ended',swap,{once:true});
+        }
       })
       .catch(function(){ /* CORS diblokir → suara tetap jalan normal */ });
+  }
+
+  /* Sambungkan elemen audio (yang sudah jadi blob) ke rantai penguat */
+  function hookBoost(a){
+    if(!actx || !a.dataset || a.dataset.boost!=='1' || a.dataset.hooked) return;
+    a.dataset.hooked='1';
+    try{ actx.createMediaElementSource(a).connect(boostIn); }catch(e){}
   }
 
   /* === Ripple Effect === */
@@ -232,8 +251,31 @@
     r.addEventListener('animationend',function(){r.remove();});
   }
 
+  /* === Teks & animasi status === */
+  function setUI(p,on){
+    if(on){
+      p.btn.classList.add('playing');
+      p.sub.textContent = p.isTrumpet
+        ? 'Sedang memutar...'
+        : (trumpetPlaying ? 'Berputar (mereda)... tekan untuk berhenti' : 'Berputar terus... tekan untuk berhenti');
+    }else{
+      p.btn.classList.remove('playing');
+      p.sub.textContent = p.isTrumpet ? 'Tekan untuk memutar' : 'Tekan untuk memutar (berulang)';
+    }
+  }
+
+  /* Musik yang sedang bunyi mengecil saat terompet aktif,
+     kembali normal saat terompet selesai/dimatikan */
+  function applyDuck(){
+    players.forEach(function(o){
+      if(!o.isMusic) return;
+      o.a.volume = trumpetPlaying ? DUCK : 1;
+      if(!o.a.paused) setUI(o,true);
+    });
+  }
+
   /* === Audio Player Logic === */
-  function setupPlayer(aid,bid,sid){
+  function setupPlayer(aid,bid,sid,opts){
     var a=document.getElementById(aid),
         b=document.getElementById(bid),
         s=document.getElementById(sid);
@@ -241,38 +283,53 @@
     a.volume=1;
     tryBoost(a);
 
+    var p={a:a,btn:b,sub:s,isTrumpet:!!opts.trumpet,isMusic:!!opts.music};
+    players.push(p);
+
     function play(e){
       if(e) addRip(b,e);
 
       ensureCtx();
       if(actx&&actx.state==='suspended') actx.resume();
 
-      /* Stop audio lain yang sedang berjalan */
-      document.querySelectorAll('audio').forEach(function(el){
-        if(el!==a){el.pause();el.currentTime=0;}
+      /* Tekan lagi saat masih bunyi → berhenti (cara mematikan musik) */
+      if(!a.paused){
+        a.pause();
+        try{a.currentTime=0;}catch(err){}
+        if(p.isTrumpet) trumpetPlaying=false;
+        setUI(p,false);
+        applyDuck();
+        return;
+      }
+
+      /* Musik menyalakan → matikan musik lain.
+         Terompet TIDAK mematikan musik, musik TIDAK mematikan terompet. */
+      players.forEach(function(o){
+        if(o===p || o.a.paused) return;
+        if(p.isTrumpet) return;   /* terompet: biarkan musik tetap bunyi */
+        if(o.isTrumpet) return;   /* musik: biarkan terompet tetap bunyi */
+        o.a.pause();
+        try{o.a.currentTime=0;}catch(err){}
+        setUI(o,false);
       });
 
-      /* Hapus animasi playing dari tombol lain */
-      document.querySelectorAll('.ico.clickable').forEach(function(el){
-        el.classList.remove('playing');
-      });
+      if(p.isTrumpet) trumpetPlaying=true;
+      applyDuck();
+
+      hookBoost(a);
 
       try{a.currentTime=0;}catch(err){}
-      var p=a.play();
-
-      if(p&&p.then){
-        p.then(function(){
-          b.classList.add('playing');
-          s.textContent='Sedang memutar...';
-        }).catch(function(){
-          s.textContent='Tekan untuk memutar';
-        });
+      var pr=a.play();
+      if(pr&&pr.then){
+        pr.then(function(){setUI(p,true);}).catch(function(){setUI(p,false);});
+      }else{
+        setUI(p,true);
       }
     }
 
     a.addEventListener('ended',function(){
-      b.classList.remove('playing');
-      s.textContent='Tekan untuk memutar';
+      setUI(p,false);
+      if(p.isTrumpet){ trumpetPlaying=false; applyDuck(); }
     });
 
     b.addEventListener('click',play);
@@ -282,9 +339,9 @@
   }
 
   /* Inisialisasi Pemutar Suara */
-  setupPlayer('sndTrumpet','playTrumpet','subTrumpet');
-  setupPlayer('sndDana','playDana','subDana');
-  setupPlayer('sndBrimo','playBrimo','subBrimo');
+  setupPlayer('sndTrumpet','playTrumpet','subTrumpet',{trumpet:true});
+  setupPlayer('sndMusik1','playMusik1','subMusik1',{music:true});
+  setupPlayer('sndMusik2','playMusik2','subMusik2',{music:true});
 
   /* ====== JAM WIB / WITA / WIT ====== */
   function fmt(tz){
